@@ -26,7 +26,6 @@ class Sample:
             "amount_(ng)": "",
             "rin": "",
         }
-        self.well_location = ""
 
 
 class Prep:
@@ -210,9 +209,7 @@ class Project:
             self.sequencer_manufacturer = "illumina"
         elif proj_details.get("sequencing_platform") in ["PromethION", "MinION"]:
             self.sequencer_manufacturer = "ont"
-        elif proj_details.get("sequencing_platform") in [
-            "Element AVITI"
-        ]:
+        elif proj_details.get("sequencing_platform") in ["Element AVITI"]:
             self.sequencer_manufacturer = "element"
         else:
             self.sequencer_manufacturer = "unknown"
@@ -291,7 +288,6 @@ class Project:
             samObj = Sample()
             samObj.ngi_id = sample_id
             samObj.customer_name = customer_name
-            samObj.well_location = sample.get("well_location")
             # Basic fields from Project database
             # Initial qc
             if sample.get("initial_qc"):
@@ -434,25 +430,26 @@ class Project:
 
         # Get Flowcell data
         fcon = statusdb.FlowcellRunMetricsConnection()
-        assert fcon, "Could not connect to {} database in StatusDB".format("flowcell")
+        assert fcon, "Could not connect to flowcell database in StatusDB"
         xcon = statusdb.X_FlowcellRunMetricsConnection()
-        assert xcon, "Could not connect to {} database in StatusDB".format(
-            "x_flowcells"
-        )
+        assert xcon, "Could not connect to x_flowcells database in StatusDB"
         ontcon = statusdb.NanoporeRunConnection()
-        assert ontcon, "Could not connect to {} database in StatusDB".format(
-            "nanopore_runs"
-        )
+        assert ontcon, "Could not connect to nanopore_runs database in StatusDB"
+        elementcon = statusdb.ElementRunConnection()
+        assert elementcon, "Could not connect to element_runs database in StatusDB"
+        
         flowcell_info = fcon.get_project_flowcell(self.ngi_id, self.dates["open_date"])
         flowcell_info.update(
             xcon.get_project_flowcell(self.ngi_id, self.dates["open_date"])
         )
         flowcell_info.update(
-            ontcon.get_project_flowcell(self.ngi_id, self.dates["open_date"])
+            ontcon.get_project_flowcell(self.ngi_id)
+        )
+        flowcell_info.update(
+            elementcon.get_project_flowcell(self.ngi_id)
         )
 
         sample_qval = defaultdict(dict)
-        sample_stats = defaultdict(dict)
 
         for fc in list(flowcell_info.values()):
             if fc["name"] in kwargs.get("exclude_fc"):
