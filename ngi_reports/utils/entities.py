@@ -135,7 +135,6 @@ class Project:
             "all_samples_sequenced": None,
         }
         self.is_finished_lib = False
-        self.is_hiseqx = False
         self.sequencer_manufacturer = ""
         self.library_construction = ""
         self.missing_fc = False
@@ -261,9 +260,6 @@ class Project:
 
         for key in self.accredited:
             self.accredited[key] = proj_details.get("accredited_({})".format(key))
-
-        if "hiseqx" in proj_details.get("sequencing_platform", ""):
-            self.is_hiseqx = True
 
         self.sequencing_setup = proj_details.get("sequencing_setup")
 
@@ -476,11 +472,7 @@ class Project:
 
             # Set the fc type
             fc_instrument = fc_details.get("RunInfo", {}).get("Instrument", "")
-            if fc_instrument.startswith("ST-"):
-                fcObj.type = "HiSeqX"
-                self.is_hiseqx = True
-                fc_runparameters = fc_details.get("RunParameters", {}).get("Setup", {})
-            elif "-" in fcObj.name:
+            if "-" in fcObj.name:
                 fcObj.type = "MiSeq"
                 fc_runparameters = fc_details.get("RunParameters", {})
             elif fc_instrument.startswith("A"):
@@ -504,8 +496,8 @@ class Project:
                 fc_runparameters = fc_details.get("protocol_run_info", {})
                 final_acquisition = fc_details.get("acquisitions")[-1]
             else:
-                fcObj.type = "HiSeq2500"
-                fc_runparameters = fc_details.get("RunParameters", {}).get("Setup", {})
+                log.error("Unknown sequencing instrument detected. Exiting.")
+                sys.exit(1)
 
             # Fetch run setup for the flowcell
             if fcObj.type == "PromethION" or fcObj.type == "MinION":
